@@ -54,7 +54,7 @@ def init(fp_deploy, fp_model):
         block_blob_service = BlockBlobService(account_name=config['blob']['account'], account_key=config['blob']['key'])
 
     except Exception as e:
-        print('[ERROR] loading model failed: ', str(e))
+        print('[ERROR] loading model failed: ', e)
 
 def upload(path_local, container_name, remove=True):
     """Upload image to Azure Blob Storage"""
@@ -65,7 +65,7 @@ def upload(path_local, container_name, remove=True):
             os.remove(path_local)
         print('[INFO] Uploaded image to blob storage: ', container_name)
     except Exception as e:
-        print('[ERROR] Uploading image failed: ', str(e), ' >> Image stored locally.')
+        print('[ERROR] Uploading image failed: ', e, ' >> Image stored locally.')
 
 def alert_email(path_local, pred, score):
     """Send an alert message via email about potential intruders.
@@ -79,13 +79,13 @@ def alert_email(path_local, pred, score):
         sender = config['email']['sender']
         receiver = config['email']['receiver'].split(',')
         subject = 'ALARM - Human spotted in the residence !'
-        body = 'The following objects were detected: %s with the following likelihood: %s. See the image here: %s' % (str(pred), str(score), str(img_url))
+        body = f'The following objects were detected: {str(pred)} with the following likelihood: {str(score)}. See the image here: {str(img_url)}'
 
         email_text = """Subject: %s
 
         %s
         """ % (subject, body)
-        
+
         # Send Email
         server = smtplib.SMTP_SSL(config['email']['server'], 465)
         server.ehlo()
@@ -93,9 +93,9 @@ def alert_email(path_local, pred, score):
         server.sendmail(sender, receiver, email_text)
         server.close()
         print('[INFO] sent email alert')
-        
+
     except Exception as e:
-        print('[ERROR] sending alert email failed: ', str(e))
+        print('[ERROR] sending alert email failed: ', e)
 
 def alert(frame, pred, score, interval=1800):
     """Evaluate frame for need to send alert"""
@@ -124,7 +124,9 @@ def alert(frame, pred, score, interval=1800):
                 alert_email(fn_img_person, pred, score)
                 email_last = time.time()
             else:
-                print('[INFO] email alert skipped. Last email was %s seconds ago.' % email_interval)
+                print(
+                    f'[INFO] email alert skipped. Last email was {email_interval} seconds ago.'
+                )
         ## b. upload based on timer
         fn_img_time = fp_img_local + now + '_time.jpg'
         if timer_last is None:
@@ -137,7 +139,7 @@ def alert(frame, pred, score, interval=1800):
             upload(fn_img_time, 'container-time')
 
     except Exception as e:
-        print('[ERROR] While evaluating alert: ', str(e))
+        print('[ERROR] While evaluating alert: ', e)
 
 def capture(rpi, resize=True):
     """Capture images using Rasperry Pi Camera"""
@@ -157,7 +159,7 @@ def capture(rpi, resize=True):
                     camera.capture(stream, format='jpeg', resize=(400,400))
                 else:
                     camera.capture(stream, format='jpeg')
-                
+
                 # ## NOTE: for testing only ##
                 # # Store image
                 # fn_img_local = fp_img_local + str(time.time()) + '.jpg'
@@ -190,7 +192,7 @@ def capture(rpi, resize=True):
 
     except Exception as e:
         frame = None
-        print('[ERROR] image capture failed: ' ,str(e))
+        print('[ERROR] image capture failed: ', e)
 
     return frame
 
@@ -212,7 +214,7 @@ def score():
         # Process results
         alert(f,r,s)
 
-        print('[INFO] loop complete: ', r ,s, str(time.time()))
+        print('[INFO] loop complete: ', r, s, time.time())
         ##Timer buffer
         time.sleep(16)
 
